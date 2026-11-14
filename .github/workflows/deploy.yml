@@ -1,0 +1,64 @@
+name: Deploy Website
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Kiểm tra đủ 3 file
+        run: |
+          if [ ! -f index.html ]; then
+            echo "Thiếu file index.html"
+            exit 1
+          fi
+          if [ ! -f style.css ]; then
+            echo "Thiếu file style.css"
+            exit 1
+          fi
+          if [ ! -f script.js ]; then
+            echo "Thiếu file script.js"
+            exit 1
+          fi
+          echo "Đã có đủ 3 file"
+
+      - name: Kiểm tra thẻ title
+        run: |
+          if ! grep -q "<title>" index.html; then
+            echo "ERROR: index.html thiếu thẻ <title>"
+            exit 1
+          fi
+          echo "Thẻ <title> hợp lệ"
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
